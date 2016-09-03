@@ -5,6 +5,10 @@ You can also use [online version](http://desudesutalk.github.io/lsbtools/).
 
 **NOTE**: this is more a playground than a real steganography.
 
+I also made short article about all stuff used in this library. [Read it](docs/lsb_en.md) if you interested.
+
+А ещё есть [вариант этой же заметки на русском](docs/lsb_rus.md).
+
 ## Installing
 Install with npm:
 ```none
