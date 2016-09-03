@@ -1,0 +1,132 @@
+#!/usr/bin/env node
+'use strict';
+
+var lsbtools = require('../'),
+	fs = require('fs'),
+	crypto = require('crypto'),
+	PNG = require('pngjs').PNG,
+	argv = require('minimist')(process.argv.slice(2),{
+		strings: ['p', 'd', 'o'],
+		boolean: ['x', 'e', 's', 'm', 'M', '1', 'b', 'h', 't'],
+		alias: {
+			'x': 'extract',
+			'e': 'embed',
+			'p': 'password',
+			's': 'shuffle',
+			'k': 'mask',
+			'm': 'matrix',
+			'1': 'plusminus1',
+			'b': 'best',
+			'd': 'data',
+			'o': 'output',
+			't': 'test',
+			'C': 'chitest',
+			'R': 'rstest',
+			'a': 'enhance',
+			'f': 'fill',
+			'h': 'help'
+		}
+	});
+
+function usage(){
+	console.log('  usage:\n\n'+
+				'    embed:   lsbtools -eb -p password -d message.txt -o secret.png clean.png\n'+
+				'    extract: lsbtools -xb -p password -d hidden.txt secret.png\n\n'+
+				'  options:\n\n'+
+				'    -p, --password   password for shuffle.\n'+
+				'    -e, --embed      hidde data in image.\n'+
+				'    -x, --extract    extract hidden data from image.\n'+
+				'    -s, --shuffle    embed with shuffle.\n'+
+				'    -k, --mask       mask data.\n'+
+				'    -m, --matrix     use matrix coding.\n'+
+				'    -1, --plusminus1 use +-1 code instead of bit flip.\n'+
+				'    -b, --best       best settings. Equals to -smM1.\n'+
+				'    -d, --data       data for embedding.\n'+
+				'    -o, --output     file for output.\n'+
+				'    -t, --test       extract data but do not write it to disc.\n'+
+				'    -C, --chitest    perform chi-squared test.\n'+
+				'    -R, --rstest     perform RS Steganalysis.\n'+
+				'    -a, --enhance    enhance LSB plane.\n'+
+				'    -f, --fill       fill LSB plane with 0 or 1.\n'+
+				'    -h, --help       show usage information.\n');
+}
+
+var data;
+
+if(!argv._[0]){
+	usage();
+	process.exit(1);
+}
+
+var png = PNG.sync.read(fs.readFileSync(argv._[0])),
+	lsbCount = png.width * png.height * 3;
+
+console.log('    Image size is: %dx%d', png.width, png.height);
+console.log('    LSBs count: %d', lsbCount);
+console.log('    Maximum capacity: %d', Math.floor(lsbCount/8));
+
+if(argv.fill === 0 || argv.fill){
+	lsbtools.fill(png.data, argv.fill);
+}
+
+var options = {
+    shuffle: argv.shuffle || argv.best,
+    matrix: argv.matrix || argv.best,
+    mask: argv.mask || argv.best,
+    key: crypto.createHash('md5').update(argv.password || '').digest(),
+    pm1code: argv.plusminus1 || argv.best
+};
+
+var data, t, needWrite = false, embedMD5, extractMD5;
+
+if(argv.embed){
+	data = fs.readFileSync(argv.data);
+	embedMD5 = crypto.createHash('md5').update(data).digest('hex');
+    console.log('\n    Embedding %d bytes', data.length);
+    console.log('    md5 hash of data: %s\n', embedMD5.match(/.{4}/g).join(' '));
+
+    t = lsbtools.write(png.data, data, options);
+
+    console.log('    %d bits (%d bytes) of data was written (%d%% of maximum capacity)', t.bitsWrited, t.bitsWrited / 8, (100 * t.bitsWrited / lsbCount).toFixed(2));
+    if(t.k > 1) console.log('    %d,%d codes used', t.k, t.n);
+    console.log('    %d image bits was changed. This is %d%% of all LSBs.', t.bitsChanged,
+        (100 * t.bitsChanged / lsbCount).toFixed(2));
+    console.log('    Efficiency: %d bits per one LSB change.', (t.bitsWrited / t.bitsChanged).toFixed(2));
+    needWrite = true;
+}
+
+if(argv.extract){
+	data = lsbtools.read(png.data, options);
+	extractMD5 = crypto.createHash('md5').update(data).digest('hex');
+
+    console.log('\n    %d bytes was extracted', data.length);
+    console.log('    %d%% of capacity was used', (100 * 8 * (data.length + 4.5) / lsbCount).toFixed(2));
+    console.log('    md5 hash of data: %s', extractMD5.match(/.{4}/g).join(' ') +
+    	(embedMD5? extractMD5==embedMD5?' (ok)':' (FAIL!)':''));
+
+    if(!argv.test){
+    	fs.writeFileSync(argv.data, new Buffer(data));
+    }
+}
+
+if(argv.rstest){
+	t = lsbtools.rsDetect(png.data, png.width);
+
+	console.log('\n      RS detected message length: %d%% (%d bytes)', (t * 100).toFixed(2), Math.floor(lsbCount * t / 8));
+}
+
+if(argv.chitest){
+	t = lsbtools.chiAttack(png.data, png.width, argv.enhance);
+
+	console.log('\n      Chi-squared detected message length: %d bytes (%d %%)', Math.floor(t/8), (100*t / lsbCount).toFixed(2));
+	needWrite = true;
+}
+
+if(!argv.chitest && argv.enhance){
+	t = lsbtools.enhance(png.data);
+	needWrite = true;
+}
+
+if(needWrite && argv.output){
+    fs.writeFileSync(argv.output, PNG.sync.write(png));
+}
