@@ -1,0 +1,174 @@
+<!DOCTYPE html><html><head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <title>LSB tools</title>
+    <style type="text/css">
+        body{
+            font-family: sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+        .container{
+            display: flex;
+            align-content: stretch;
+            flex-wrap: wrap;
+            align-items: stretch;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            box-sizing: border-box;
+            border: 5px solid white;
+        }
+
+        h1 {
+            width: 100%;
+            display: block;
+            height: 1em;
+        }
+
+        table{
+            display: block;
+            flex: 1 0px;
+            background-color: beige;
+        }
+
+        #data-md5 {
+            font-family: monospace;
+        }
+
+        #outputdiv{
+            padding: 10px;
+            flex: 4;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: lightgray;
+        }
+        #imgview, #leftside{
+            overflow: auto;
+        }
+
+        .crisp{
+            -ms-interpolation-mode: nearest-neighbor;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -o-crisp-edges;
+            image-rendering: pixelated;
+        }
+        canvas {
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          -khtml-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          cursor: move;
+        }
+
+    </style>
+    <script src="FileSaver.min.js"></script>
+    <script src="lsbtools.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div id="leftside">
+        <h3>LSB playground</h3>
+        <p>Visit project page on GitHub.</p>
+        <table>
+            <tr>
+                <td><labeL for="image-select">Image: </labeL></td>
+                <td><input type="file" id="image-select" /></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><strong>Processing options</strong></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="checkbox" id="image-clear" /> <labeL for="image-clear">clear LSB</labeL></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="checkbox" id="image-enhance" /> <labeL for="image-enhance">enhance LSB</labeL></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="checkbox" id="image-chi" /> <labeL for="image-chi">Chi-squred test</labeL></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="checkbox" id="image-rs" /> <labeL for="image-rs">RS test</labeL></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><strong>Embed/extract data</strong></td>
+            </tr>
+
+            <tr>
+                <td><labeL for="data-select">Data: </labeL></td>
+                <td><input type="file" id="data-select" /></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="button" value="remove data" id="embed-remove"></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><strong>Embed options</strong></td>
+
+            </tr>
+
+            <tr>
+                <td><labeL for="password">Password: </labeL></td>
+                <td><input name="passwd" type="text" value="secret" size="10" id="password"><br><small>(for shuffling and masking)</small></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="checkbox" id="data-shuffle" /> <labeL for="data-shuffle">shuffle</labeL></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="checkbox" id="data-mask" /> <labeL for="data-mask">mask data</labeL></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="checkbox" id="data-matrix" /> <labeL for="data-matrix">matrix encoding</labeL></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="checkbox" id="data-pm1" /> <labeL for="data-pm1">±1 encoding</labeL></td>
+            </tr>
+
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="button" value="extract data" id="extract-data"></td>
+            </tr>
+            <tr>
+                <td>&nbsp;</td>
+                <td><input type="button" value="save image" id="save-result"></td>
+            </tr>
+        </table>
+        <strong>Processing log:</strong><br><pre id="process-log"></pre>
+        </div>
+        <div id="outputdiv">
+            <div>Zoom: <input type="range" min="0" max="9" step="1" value="4" id="zoom"/> <span id="zoom-value">100%</span></div>
+            <div id="imgview">
+                <canvas id="preview"></canvas>
+            </div>
+        </div>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
