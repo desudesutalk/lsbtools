@@ -39,6 +39,16 @@ Returns Uint8Array with bytes extracted from image.
 ### lsbTools.write(pixels, data, options)
 Opposite to `read`, writes `data` bytes into image. Accepts same `options` object.
 
+Returns object with writing stats. Like this:
+```js
+{
+  bitsWrited: 17234,  // total bits writed
+  bitsChanged: 1725,  // how many bits in image was changed
+  n: 10,  // bit per codeword
+  k: 1023 // length of codewords (without matrix coding both n and k will be 1)
+}
+```
+
 ### lsbTools.fill(pixels, value)
 Fill LSB plane of image with provided value. 0 or 1.
 
