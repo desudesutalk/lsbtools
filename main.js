@@ -173,14 +173,40 @@ var handleContainerSelect = function(evt) {
 	}
 };
 
+function concatBuffer( buffer1, buffer2 ) {
+  var tmp = new Uint8Array( buffer1.byteLength + buffer2.byteLength );
+  tmp.set( new Uint8Array( buffer1 ), 0 );
+  tmp.set( new Uint8Array( buffer2 ), buffer1.byteLength );
+  //tmp = tmp.slice(0, 256);
+  return tmp.buffer;
+}
+
+var max_filename_bytes = 256;		//default limit for pathway will be 256 bytes.
+
 var handleDataSelect = function(evt) {
 	embeddata = null;
 
 	var files = evt.target.files; // FileList object
 	var reader = new FileReader();
 	if (files[0]){
+		var name = new Uint8Array(max_filename_bytes);									//max filename size will be max_filename_bytes bytes
+		name.set(
+			(new TextEncoder())		//Using TextEncoder
+			.encode(				//encode to Uint8Array
+				files[0].name			//string with uploaded filename
+			)
+									//and add this
+		); 							//to previous Uint8Array, by filling this.
+		//console.log("name", name);	//show this uint8array (test)
+
 		reader.onload = function(e) {
-				embeddata = new Uint8Array(e.target.result);
+				//embeddata = new Uint8Array(e.target.result);								//old code
+				embeddata = new Uint8Array(
+					concatBuffer(			//join two arrayBuffers
+						e.target.result,	//array with data-buffer
+						name.buffer			//and add filename as +max_filename_bytes bytes in the end (the rest filled by null-byte).
+					)
+				);
 				processImage(false);
 			};
 		reader.readAsArrayBuffer(files[0]);
@@ -191,9 +217,28 @@ var handleDataSelect = function(evt) {
 
 var doExtract = function() {
 	var data = processImage(true).data;
+	
+	console.log("data", data);
+	var filename =
+		(
+			(new TextDecoder())			//using TextDecoder
+			.decode(					//decode to string
+				data.slice(				//last max_filename_bytes bytes from extracted data
+					data.length-max_filename_bytes,	//from this offset
+					data.length			//up to end
+				)
+			)
+		)
+		.replace(/\0.*$/g,'')			//and replace all null-bytes characters '\0'
+	;
+
+	data = data.slice(0, data.length-max_filename_bytes);	//use data, exclude last max_filename_bytes bytes.
 
 	var blob = new Blob([data], {type: "application/octet-stream"});
-	saveAs(blob, Date.now() + '.data');
+
+//	saveAs(blob, Date.now() + '.data');	//old code
+
+	saveAs(blob, filename);		//save file, with filename
 };
 
 document.getElementById('image-select').onchange = handleContainerSelect;
